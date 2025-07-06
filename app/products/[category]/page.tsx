@@ -111,7 +111,7 @@ export default function CategoryPage() {
                   ? `/products/${category}/${sub.id}`
                   : `/products/${category}/${sub.id}/items`
               }
-              className="bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 transition w-max"
+              className="bg-primary text-white px-6 py-3 rounded hover:bg-accent transition w-max"
             >
               ZIE MEER
             </Link>

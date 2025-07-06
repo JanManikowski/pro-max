@@ -35,7 +35,7 @@ export default function Navbar() {
   const cachedCategories = useMemo(() => categories, [categories]);
 
   return (
-    <nav className="bg-white shadow border-b text-gray-800 font-roboto text-[16px] z-50 relative">
+    <nav className="bg-primary text-white shadow border-b font-roboto text-[16px] z-50 relative">
       <div className="max-w-screen-xl mx-auto flex items-center justify-between px-6 py-4 relative z-50">
         {/* Logo */}
         <img src="/logo.png" alt="Logo" className="h-10" />
@@ -43,7 +43,7 @@ export default function Navbar() {
         {/* Nav Links */}
         <ul className="flex gap-8 items-center font-medium relative">
           <li>
-            <Link href="#" className="hover:text-blue-600 transition">
+            <Link href="#" className="hover:text-accent transition">
               Over het bedrijf
             </Link>
           </li>
@@ -58,7 +58,7 @@ export default function Navbar() {
   <div className="inline-block px-4 py-2">
     <Link
       href="/products"
-      className="hover:text-blue-600 transition cursor-pointer"
+      className="hover:text-accent transition cursor-pointer"
       onClick={(e) => {
         // Optional: close dropdown when navigating
         setShowDropdown(false);
@@ -75,7 +75,7 @@ export default function Navbar() {
                 {cachedCategories.map((cat) => (
                   <div
                     key={cat.id}
-                    className="relative group flex flex-col items-center w-32 text-center hover:text-blue-600 transition"
+                    className="relative group flex flex-col items-center w-32 text-center hover:text-accent transition"
                   >
                     <span className="font-semibold cursor-default">{cat.name}</span>
 
@@ -84,7 +84,7 @@ export default function Navbar() {
                         {cat.subcategories.map((sub) => (
                           <li
                             key={sub.id}
-                            className="hover:text-blue-600 cursor-pointer px-3 py-1 whitespace-nowrap"
+                            className="hover:text-accent cursor-pointer px-3 py-1 whitespace-nowrap"
                           >
                             {sub.name}
                           </li>
@@ -98,13 +98,13 @@ export default function Navbar() {
           </div>
 
           <li>
-            <Link href="#" className="hover:text-blue-600 transition">
+            <Link href="#" className="hover:text-accent transition">
               Over Ons
             </Link>
           </li>
 
           <li>
-            <Link href="#" className="hover:text-blue-600 transition">
+            <Link href="#" className="hover:text-accent transition">
               Contact
             </Link>
           </li>

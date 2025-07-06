@@ -47,7 +47,7 @@ export default function ProductenPage() {
               {categories.map((cat) => (
                 <li key={cat.id}>
                   <Link href={`/products/${encodeURIComponent(cat.name.toLowerCase())}`}>
-                    <span className="text-lg font-medium text-gray-800 hover:text-blue-600 transition cursor-pointer">
+                    <span className="text-lg font-medium text-gray-800 hover:text-accent transition cursor-pointer">
                       {cat.name}
                     </span>
                   </Link>

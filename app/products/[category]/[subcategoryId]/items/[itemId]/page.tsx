@@ -67,7 +67,7 @@ export default function ItemDetailPage() {
             <ul className="space-y-3 text-lg">
               {item.bulletpoints?.map((point: string, i: number) => (
                 <li key={i} className="flex items-start gap-3">
-                  <span className="text-blue-600 font-bold mt-1">✓</span>
+                  <span className="text-accent font-bold mt-1">✓</span>
                   <span>{point}</span>
                 </li>
               ))}

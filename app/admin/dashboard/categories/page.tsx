@@ -28,7 +28,7 @@ export default function CategoriesPage() {
             <div className="flex justify-between items-center">
               <span>{cat.name || 'Unnamed Category'}</span>
               <a
-                className="text-blue-600"
+                className="text-accent"
                 href={`/admin/dashboard/categories/${cat.id}/subcategories`}
               >
                 View Subcategories →
