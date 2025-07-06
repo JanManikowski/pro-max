@@ -1,16 +1,20 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { db } from '../lib/firebase';
 import { collection, getDocs } from 'firebase/firestore';
+import SearchBar from './SearchBar'; // adjust path if needed
 
-type Subcategory = { id: string; name: string };
+type SubSubcategory = { id: string; name: string };
+type Subcategory = { id: string; name: string; subsubcategories?: SubSubcategory[] };
 type Category = { id: string; name: string; subcategories?: Subcategory[] };
 
 export default function Navbar() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [activeSubcategory, setActiveSubcategory] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -18,12 +22,32 @@ export default function Navbar() {
       const catData: Category[] = [];
 
       for (const cat of catSnap.docs) {
-        const subSnap = await getDocs(collection(db, `categories/${cat.id}/subcategories`));
-        const sub = subSnap.docs.map((doc) => ({
-          id: doc.id,
-          name: doc.data().name,
-        }));
-        catData.push({ id: cat.id, name: cat.data().name, subcategories: sub });
+        const catId = cat.id;
+        const subSnap = await getDocs(collection(db, `categories/${catId}/subcategories`));
+        const subcategories: Subcategory[] = [];
+
+        for (const sub of subSnap.docs) {
+          const subId = sub.id;
+          const subsubSnap = await getDocs(
+            collection(db, `categories/${catId}/subcategories/${subId}/subsubcategories`)
+          );
+          const subsubcategories = subsubSnap.docs.map((doc) => ({
+            id: doc.id,
+            name: doc.data().name,
+          }));
+
+          subcategories.push({
+            id: subId,
+            name: sub.data().name,
+            subsubcategories,
+          });
+        }
+
+        catData.push({
+          id: catId,
+          name: cat.data().name,
+          subcategories,
+        });
       }
 
       setCategories(catData);
@@ -32,97 +56,143 @@ export default function Navbar() {
     load();
   }, []);
 
-  const cachedCategories = useMemo(() => categories, [categories]);
-
   return (
-    <nav className="bg-white shadow border-b text-gray-800 font-roboto text-[16px] z-50 relative">
-      <div className="max-w-screen-xl mx-auto flex items-center justify-between px-6 py-4 relative z-50">
+    <nav className="bg-white shadow-sm border-b border-gray-200 z-50 relative font-roboto">
+      <div className="max-w-screen-xl mx-auto flex items-center justify-between px-6 py-4 relative">
         {/* Logo */}
-        <img src="/logo.png" alt="Logo" className="h-10" />
+        <Link href="/" className="flex items-center">
+          <img src="/logo.png" alt="Logo" className="h-10" />
+        </Link>
 
-        {/* Nav Links */}
-        <ul className="flex gap-8 items-center font-medium relative">
+        {/* Navigation */}
+        <ul className="flex gap-8 items-center text-base font-medium relative">
           <li>
-            <Link href="#" className="hover:text-blue-600 transition">
+            <Link href="#" className="hover:text-blue-600 transition hover:underline underline-offset-4">
               Over het bedrijf
             </Link>
           </li>
 
-          {/* Producten Dropdown */}
-          <div
-            className="relative z-50"
-            onMouseEnter={() => setShowDropdown(true)}
-            onMouseLeave={() => setShowDropdown(false)}
-          >
-            <li className="px-4 py-2">
-  <div className="inline-block px-4 py-2">
-    <Link
-      href="/products"
-      className="hover:text-blue-600 transition cursor-pointer"
-      onClick={(e) => {
-        // Optional: close dropdown when navigating
-        setShowDropdown(false);
-      }}
-    >
-      Producten
-    </Link>
-  </div>
-</li>
+          {/* Producten */}
+          <li className="relative">
+            <div
+              onMouseEnter={() => setShowDropdown(true)}
+              onMouseLeave={() => {
+                setShowDropdown(false);
+                setActiveCategory(null);
+                setActiveSubcategory(null);
+              }}
+              className="relative"
+            >
+              <Link
+                href="/products"
+                className="hover:text-blue-600 transition hover:underline underline-offset-4"
+              >
+                Producten
+              </Link>
 
-
-            {showDropdown && (
-              <div className="fixed left-1/2 top-[72px] transform -translate-x-1/2 w-screen bg-white shadow-xl py-6 px-10 flex flex-wrap justify-center gap-8 z-40 border-t">
-                {cachedCategories.map((cat) => (
-                  <div
-                    key={cat.id}
-                    className="relative group flex flex-col items-center w-32 text-center hover:text-blue-600 transition"
-                  >
-                    <span className="font-semibold cursor-default">{cat.name}</span>
-
-                    {cat.subcategories?.length > 0 && (
-                      <ul className="py-2 absolute top-[40px] left-1/2 -translate-x-1/2 mt-2 w-screen bg-white shadow-xl py-4 px-6 flex flex-wrap justify-center gap-4 rounded border opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition duration-200 z-50">
-                        {cat.subcategories.map((sub) => (
-                          <li
-                            key={sub.id}
-                            className="hover:text-blue-600 cursor-pointer px-3 py-1 whitespace-nowrap"
-                          >
-                            {sub.name}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <li>
-            <Link href="#" className="hover:text-blue-600 transition">
-              Over Ons
-            </Link>
+              {/* Hover buffer */}
+              <div className="absolute top-full left-0 w-full h-6 pointer-events-auto"></div>
+            </div>
           </li>
 
           <li>
-            <Link href="#" className="hover:text-blue-600 transition">
+            <Link href="#" className="hover:text-blue-600 transition hover:underline underline-offset-4">
+              Over Ons
+            </Link>
+          </li>
+          <li>
+            <Link href="#" className="hover:text-blue-600 transition hover:underline underline-offset-4">
               Contact
             </Link>
           </li>
         </ul>
 
-        {/* Right Side */}
-        <div className="flex items-center gap-4">
-          <input
-            type="text"
-            placeholder="🔍"
-            className="border px-2 py-2 rounded text-sm"
-          />
-          <select className="text-sm border px-2 py-2 rounded">
+        {/* Right side: Search + Language */}
+        <div className="flex items-center gap-3">
+          <SearchBar />
+          {/* <select className="text-sm border border-gray-300 px-3 py-2 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500">
             <option>Nederlands</option>
             <option>English</option>
-          </select>
+          </select> */}
         </div>
       </div>
+
+      {/* DROPDOWN OUTSIDE MAIN CONTAINER FOR FIXED WIDTH */}
+      {showDropdown && (
+        <div
+          onMouseEnter={() => setShowDropdown(true)}
+          onMouseLeave={() => {
+            setShowDropdown(false);
+            setActiveCategory(null);
+            setActiveSubcategory(null);
+          }}
+          className="fixed top-[72px] left-1/2 -translate-x-1/2 w-screen bg-white shadow-2xl border-t z-40 text-center animate-fade-in"
+        >
+          <div className="max-w-screen-xl mx-auto">
+            {/* Category Row */}
+            <div className="flex flex-wrap justify-center gap-6 py-4 border-b">
+              {categories.map((cat) => (
+                <Link
+                  key={cat.id}
+                  href={`/products/${cat.id}`}
+                  className={`px-4 py-2 transition transform duration-200 ease-in-out hover:scale-110 hover:text-blue-600 ${
+                    activeCategory === cat.id ? 'text-blue-600 font-semibold underline underline-offset-4' : ''
+                  }`}
+                  onMouseEnter={() => {
+                    setActiveCategory(cat.id);
+                    setActiveSubcategory(null);
+                  }}
+                >
+                  {cat.name}
+                </Link>
+              ))}
+            </div>
+
+            {/* Subcategory Row */}
+            {activeCategory && (
+              <div className="flex flex-wrap justify-center gap-6 py-4 border-b bg-gray-50">
+                {categories
+                  .find((c) => c.id === activeCategory)
+                  ?.subcategories?.map((sub) => (
+                    <Link
+                      key={sub.id}
+                      href={`/products/${activeCategory}/${sub.id}`}
+                      className={`px-4 py-2 transition transform duration-200 ease-in-out hover:scale-110 hover:text-blue-600 ${
+                        activeSubcategory === sub.id ? 'text-blue-600 font-semibold underline underline-offset-4' : ''
+                      }`}
+                      onMouseEnter={() => setActiveSubcategory(sub.id)}
+                    >
+                      {sub.name}
+                    </Link>
+                  ))}
+              </div>
+            )}
+
+            {/* Sub-subcategory Row */}
+            {activeCategory &&
+              activeSubcategory &&
+              categories
+                .find((c) => c.id === activeCategory)
+                ?.subcategories?.find((s) => s.id === activeSubcategory)
+                ?.subsubcategories?.length > 0 && (
+                <div className="flex flex-wrap justify-center gap-6 py-4 bg-gray-100">
+                  {categories
+                    .find((c) => c.id === activeCategory)
+                    ?.subcategories?.find((s) => s.id === activeSubcategory)
+                    ?.subsubcategories?.map((subsub) => (
+                      <Link
+                        key={subsub.id}
+                        href={`/products/${activeCategory}/${activeSubcategory}/${subsub.id}`}
+                        className="px-4 py-2 transition transform duration-200 ease-in-out hover:scale-110 hover:text-blue-600 text-sm"
+                      >
+                        {subsub.name}
+                      </Link>
+                    ))}
+                </div>
+              )}
+          </div>
+        </div>
+      )}
     </nav>
   );
 }
