@@ -150,10 +150,27 @@ export default function AddItemPage() {
       };
 
       const itemSlug = slugify(title);
-      const itemRef = doc(
-        db,
-        `categories/${categoryId}/subcategories/${subcategoryId}/items/${itemSlug}`
-      );
+      let itemRef;
+
+if (selectedSubSubcategory && selectedSubSubcategory !== '__new__') {
+  const subSubSlug = slugify(selectedSubSubcategory);
+  itemRef = doc(
+    db,
+    `categories/${categoryId}/subcategories/${subcategoryId}/subsubcategories/${subSubSlug}/items/${itemSlug}`
+  );
+} else if (selectedSubSubcategory === '__new__' && newSubSubcategory) {
+  const subSubSlug = slugify(newSubSubcategory);
+  itemRef = doc(
+    db,
+    `categories/${categoryId}/subcategories/${subcategoryId}/subsubcategories/${subSubSlug}/items/${itemSlug}`
+  );
+} else {
+  itemRef = doc(
+    db,
+    `categories/${categoryId}/subcategories/${subcategoryId}/items/${itemSlug}`
+  );
+}
+
 
       await setDoc(itemRef, itemData);
 

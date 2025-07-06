@@ -1,104 +1,73 @@
+// File: products/[category]/[subcategoryId]/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { db } from '../../../lib/firebase';
 import { collection, getDocs } from 'firebase/firestore';
-
-type Item = {
-  id: string;
-  title: string;
-  description: string;
-  bulletpoints?: string[];
-  uG?: number;
-  afdichten?: string;
-  kamer?: string;
-  images?: string[];
-};
+import Link from 'next/link';
+import Navbar from '../../../components/Navbar';
 
 export default function SubcategoryPage() {
-  const { subcategoryId } = useParams();
-  const [items, setItems] = useState<Item[]>([]);
-  const [subcategoryName, setSubcategoryName] = useState<string | null>(null);
+  const { category, subcategoryId } = useParams() as {
+    category: string;
+    subcategoryId: string;
+  };
+  const router = useRouter();
+
+  const [subsubcategories, setSubsubcategories] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const categoriesSnap = await getDocs(collection(db, 'categories'));
+        const subsubSnap = await getDocs(
+          collection(db, `categories/${category}/subcategories/${subcategoryId}/subsubcategories`)
+        );
 
-        for (const cat of categoriesSnap.docs) {
-          const subSnap = await getDocs(
-            collection(db, `categories/${cat.id}/subcategories`)
-          );
-
-          for (const sub of subSnap.docs) {
-            if (sub.id === subcategoryId) {
-              setSubcategoryName(sub.data().name);
-
-              const itemSnap = await getDocs(
-                collection(
-                  db,
-                  `categories/${cat.id}/subcategories/${sub.id}/items`
-                )
-              );
-
-              const itemsData = itemSnap.docs.map((doc) => ({
-                id: doc.id,
-                ...doc.data(),
-              })) as Item[];
-
-              setItems(itemsData);
-              setLoading(false);
-              return;
-            }
-          }
+        if (subsubSnap.empty) {
+          // Redirect to items if no subsubcategories
+          router.replace(`/products/${category}/${subcategoryId}/items`);
+          return;
         }
 
-        // Not found
-        setSubcategoryName('Onbekende subcategorie');
-        setLoading(false);
-      } catch (error) {
-        console.error('Error loading subcategory items:', error);
+        const subsubs = subsubSnap.docs.map((doc) => ({
+          id: doc.id,
+          name: doc.data().name,
+        }));
+        setSubsubcategories(subsubs);
+      } catch (err) {
+        console.error('Error loading subsubcategories:', err);
+      } finally {
         setLoading(false);
       }
     };
 
     load();
-  }, [subcategoryId]);
+  }, [category, subcategoryId, router]);
 
-  if (loading) {
-    return <div className="p-6">Laden...</div>;
-  }
+  if (loading) return <div className="p-6">Laden...</div>;
 
   return (
-    <div className="max-w-screen-xl mx-auto py-10 px-6">
-      <h1 className="text-2xl font-bold mb-6">
-        Items in {subcategoryName ?? 'Subcategorie'}
-      </h1>
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
+      <div className="max-w-screen-xl mx-auto px-6 py-12">
+        <h1 className="text-4xl font-bold mb-10 text-center capitalize">
+          Subcategorieën in {subcategoryId}
+        </h1>
 
-      {items.length > 0 ? (
-        <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {items.map((item) => (
-            <li
-              key={item.id}
-              className="border p-4 rounded shadow hover:shadow-lg transition"
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+          {subsubcategories.map((subsub) => (
+            <Link
+              key={subsub.id}
+              href={`/products/${category}/${subcategoryId}/${subsub.id}/items`}
+              className="block p-6 border bg-white shadow rounded hover:shadow-md transition text-center text-lg font-medium text-gray-800"
             >
-              <h2 className="font-semibold text-lg mb-2">{item.title}</h2>
-              <p className="text-sm text-gray-600">{item.description}</p>
-              {item.images && item.images.length > 0 && (
-                <img
-                  src={item.images[0]}
-                  alt={item.title}
-                  className="w-full mt-2 rounded"
-                />
-              )}
-            </li>
+              {subsub.name}
+            </Link>
           ))}
-        </ul>
-      ) : (
-        <p className="text-gray-500">Geen items gevonden.</p>
-      )}
+        </div>
+      </div>
     </div>
   );
 }
