@@ -1,3 +1,4 @@
+// updated version
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -8,17 +9,31 @@ import {
   doc,
   setDoc
 } from 'firebase/firestore';
-import { db } from '../../../lib/firebase'; // Adjust the import path as necessary
+import { db } from '../../../lib/firebase';
+
+const slugify = (text: string) =>
+  text
+    .toLowerCase()
+    .trim()
+    .replace(/[^À-ſa-z0-9 -]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
 
 export default function AddItemPage() {
   const [categories, setCategories] = useState<any[]>([]);
   const [subcategories, setSubcategories] = useState<any[]>([]);
+  const [subSubcategories, setSubSubcategories] = useState<any[]>([]);
 
   const [selectedCategory, setSelectedCategory] = useState('');
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategorySmallText, setNewCategorySmallText] = useState('');
 
   const [selectedSubcategory, setSelectedSubcategory] = useState('');
   const [newSubcategoryName, setNewSubcategoryName] = useState('');
+  const [newSubcategorySmallText, setNewSubcategorySmallText] = useState('');
+
+  const [selectedSubSubcategory, setSelectedSubSubcategory] = useState('');
+  const [newSubSubcategory, setNewSubSubcategory] = useState('');
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -28,7 +43,6 @@ export default function AddItemPage() {
   const [kamer, setKamer] = useState('');
   const [images, setImages] = useState('');
 
-  // Fetch all categories on load
   useEffect(() => {
     const fetchCategories = async () => {
       const snapshot = await getDocs(collection(db, 'categories'));
@@ -41,7 +55,6 @@ export default function AddItemPage() {
     fetchCategories();
   }, []);
 
-  // Fetch subcategories when category is selected
   useEffect(() => {
     const fetchSubcategories = async () => {
       if (!selectedCategory || selectedCategory === '__new__') return;
@@ -53,9 +66,29 @@ export default function AddItemPage() {
         ...doc.data()
       }));
       setSubcategories(data);
+      setSelectedSubcategory('');
     };
     fetchSubcategories();
   }, [selectedCategory]);
+
+  useEffect(() => {
+    const fetchSubSubcategories = async () => {
+      if (!selectedSubcategory || selectedSubcategory === '__new__') return;
+      const snapshot = await getDocs(
+        collection(
+          db,
+          `categories/${selectedCategory}/subcategories/${selectedSubcategory}/subsubcategories`
+        )
+      );
+      const data = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setSubSubcategories(data);
+      setSelectedSubSubcategory('');
+    };
+    fetchSubSubcategories();
+  }, [selectedSubcategory]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,30 +97,42 @@ export default function AddItemPage() {
       let categoryId = selectedCategory;
       let subcategoryId = selectedSubcategory;
 
-      // Step 1: Create new category if selected
       if (selectedCategory === '__new__' && newCategoryName) {
-        const catDoc = await addDoc(collection(db, 'categories'), {
-          name: newCategoryName
+        const slug = slugify(newCategoryName);
+        const categoryRef = doc(db, 'categories', slug);
+        await setDoc(categoryRef, {
+          name: newCategoryName,
+          slug,
+          smallText: newCategorySmallText || ''
         });
-        categoryId = catDoc.id;
+        categoryId = slug;
       }
 
-      // Step 2: Create new subcategory if selected
       if (selectedSubcategory === '__new__' && newSubcategoryName) {
+        const subSlug = slugify(newSubcategoryName);
         const subRef = doc(
           db,
-          `categories/${categoryId}/subcategories/${newSubcategoryName
-            .toLowerCase()
-            .replace(/\s+/g, '-')}`
+          `categories/${categoryId}/subcategories/${subSlug}`
         );
         await setDoc(subRef, {
-          name: newSubcategoryName
+          name: newSubcategoryName,
+          smallText: newSubcategorySmallText || ''
         });
         subcategoryId = subRef.id;
       }
 
-      // Step 3: Add item
-      const itemData = {
+      if (selectedSubSubcategory === '__new__' && newSubSubcategory) {
+        const subSubSlug = slugify(newSubSubcategory);
+        const subSubRef = doc(
+          db,
+          `categories/${categoryId}/subcategories/${subcategoryId}/subsubcategories/${subSubSlug}`
+        );
+        await setDoc(subSubRef, {
+          name: newSubSubcategory
+        });
+      }
+
+      const itemData: any = {
         title,
         description,
         bulletpoints: bulletpoints
@@ -100,16 +145,17 @@ export default function AddItemPage() {
         images: images
           .split(',')
           .map((url) => url.trim())
-          .filter(Boolean)
+          .filter(Boolean),
+        subSubcategory: selectedSubSubcategory === '__new__' ? newSubSubcategory.trim() : selectedSubSubcategory
       };
 
-      await addDoc(
-        collection(
-          db,
-          `categories/${categoryId}/subcategories/${subcategoryId}/items`
-        ),
-        itemData
+      const itemSlug = slugify(title);
+      const itemRef = doc(
+        db,
+        `categories/${categoryId}/subcategories/${subcategoryId}/items/${itemSlug}`
       );
+
+      await setDoc(itemRef, itemData);
 
       alert('Item added successfully!');
       resetForm();
@@ -122,8 +168,12 @@ export default function AddItemPage() {
   const resetForm = () => {
     setSelectedCategory('');
     setNewCategoryName('');
+    setNewCategorySmallText('');
     setSelectedSubcategory('');
     setNewSubcategoryName('');
+    setNewSubcategorySmallText('');
+    setSelectedSubSubcategory('');
+    setNewSubSubcategory('');
     setTitle('');
     setDescription('');
     setBulletpoints('');
@@ -147,8 +197,8 @@ export default function AddItemPage() {
           value={selectedCategory}
           onChange={(e) => {
             setSelectedCategory(e.target.value);
-            setSelectedSubcategory('');
             setNewCategoryName('');
+            setNewCategorySmallText('');
           }}
           className="w-full border p-2 rounded"
           required
@@ -162,14 +212,23 @@ export default function AddItemPage() {
           <option value="__new__">+ New category</option>
         </select>
         {selectedCategory === '__new__' && (
-          <input
-            type="text"
-            className="w-full mt-2 border p-2 rounded"
-            placeholder="New category name"
-            value={newCategoryName}
-            onChange={(e) => setNewCategoryName(e.target.value)}
-            required
-          />
+          <>
+            <input
+              type="text"
+              className="w-full mt-2 border p-2 rounded"
+              placeholder="New category name"
+              value={newCategoryName}
+              onChange={(e) => setNewCategoryName(e.target.value)}
+              required
+            />
+            <input
+              type="text"
+              className="w-full mt-2 border p-2 rounded"
+              placeholder="Small description"
+              value={newCategorySmallText}
+              onChange={(e) => setNewCategorySmallText(e.target.value)}
+            />
+          </>
         )}
       </div>
 
@@ -182,6 +241,7 @@ export default function AddItemPage() {
             onChange={(e) => {
               setSelectedSubcategory(e.target.value);
               setNewSubcategoryName('');
+              setNewSubcategorySmallText('');
             }}
             className="w-full border p-2 rounded"
             required
@@ -195,12 +255,51 @@ export default function AddItemPage() {
             <option value="__new__">+ New subcategory</option>
           </select>
           {selectedSubcategory === '__new__' && (
+            <>
+              <input
+                type="text"
+                className="w-full mt-2 border p-2 rounded"
+                placeholder="New subcategory name"
+                value={newSubcategoryName}
+                onChange={(e) => setNewSubcategoryName(e.target.value)}
+                required
+              />
+              <input
+                type="text"
+                className="w-full mt-2 border p-2 rounded"
+                placeholder="Small subcategory description"
+                value={newSubcategorySmallText}
+                onChange={(e) => setNewSubcategorySmallText(e.target.value)}
+              />
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Sub-Subcategory Selection */}
+      {selectedSubcategory && (
+        <div>
+          <label className="block mb-1 font-semibold">Sub-subcategory</label>
+          <select
+            value={selectedSubSubcategory}
+            onChange={(e) => setSelectedSubSubcategory(e.target.value)}
+            className="w-full border p-2 rounded"
+          >
+            <option value="">Select sub-subcategory (optional)</option>
+            {subSubcategories.map((sub) => (
+              <option key={sub.id} value={sub.name}>
+                {sub.name}
+              </option>
+            ))}
+            <option value="__new__">+ New sub-subcategory</option>
+          </select>
+          {selectedSubSubcategory === '__new__' && (
             <input
               type="text"
               className="w-full mt-2 border p-2 rounded"
-              placeholder="New subcategory name"
-              value={newSubcategoryName}
-              onChange={(e) => setNewSubcategoryName(e.target.value)}
+              placeholder="New sub-subcategory name"
+              value={newSubSubcategory}
+              onChange={(e) => setNewSubSubcategory(e.target.value)}
               required
             />
           )}
@@ -208,6 +307,7 @@ export default function AddItemPage() {
       )}
 
       {/* Item Fields */}
+      <label className="block mb-1 font-semibold">Item</label>
       <input
         type="text"
         className="w-full border p-2 rounded"
