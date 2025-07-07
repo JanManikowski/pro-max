@@ -1,4 +1,3 @@
-// File: products/[category]/[subcategoryId]/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -16,7 +15,8 @@ export default function SubcategoryPage() {
   const router = useRouter();
 
   const [subsubcategories, setSubsubcategories] = useState<{ id: string; name: string }[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [checked, setChecked] = useState(false); // ✅ prevent premature render
+  const [redirected, setRedirected] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -26,7 +26,7 @@ export default function SubcategoryPage() {
         );
 
         if (subsubSnap.empty) {
-          // Redirect to items if no subsubcategories
+          setRedirected(true);
           router.replace(`/products/${category}/${subcategoryId}/items`);
           return;
         }
@@ -39,14 +39,14 @@ export default function SubcategoryPage() {
       } catch (err) {
         console.error('Error loading subsubcategories:', err);
       } finally {
-        setLoading(false);
+        setChecked(true); // ✅ We know if we're redirecting or not
       }
     };
 
     load();
   }, [category, subcategoryId, router]);
 
-  if (loading) return <div className="p-6">Laden...</div>;
+  if (!checked || redirected) return null; // ✅ block rendering until ready
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -56,7 +56,7 @@ export default function SubcategoryPage() {
           Subcategorieën in {subcategoryId}
         </h1>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 transition-opacity duration-700 ease-out opacity-100">
           {subsubcategories.map((subsub) => (
             <Link
               key={subsub.id}

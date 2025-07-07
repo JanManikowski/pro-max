@@ -25,7 +25,7 @@ export default function SubSubcategoryItemsPage() {
   };
 
   const [items, setItems] = useState<Item[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -40,14 +40,12 @@ export default function SubSubcategoryItemsPage() {
       } catch (err) {
         console.error('Error fetching items:', err);
       } finally {
-        setLoading(false);
+        setDataLoaded(true);
       }
     };
 
     fetchItems();
   }, [category, subcategoryId, subsubcategory]);
-
-  if (loading) return <div className="p-6">Laden...</div>;
 
   return (
     <div className="bg-white min-h-screen">
@@ -58,48 +56,54 @@ export default function SubSubcategoryItemsPage() {
           {subsubcategory}
         </h1>
 
-        {items.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10">
-            {items.map((item) => (
-              <Link
-                key={item.id}
-                href={`/products/${category}/${subcategoryId}/${subsubcategory}/items/${item.id}`}
-                className="block bg-white shadow-md rounded-lg overflow-hidden hover:shadow-lg transition"
-              >
-                {item.images?.[0] ? (
-                  <img
-                    src={item.images[0]}
-                    alt={item.title ?? 'Afbeelding'}
-                    className="w-full h-48 object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-48 bg-gray-100 flex items-center justify-center text-gray-400">
-                    Geen afbeelding
-                  </div>
-                )}
+        <div
+          className={`transition-opacity duration-700 ease-out ${
+            dataLoaded ? 'opacity-100' : 'opacity-0'
+          }`}
+        >
+          {items.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10">
+              {items.map((item) => (
+                <Link
+                  key={item.id}
+                  href={`/products/${category}/${subcategoryId}/${subsubcategory}/items/${item.id}`}
+                  className="block bg-white shadow-md rounded-lg overflow-hidden hover:shadow-lg transition"
+                >
+                  {item.images?.[0] ? (
+                    <img
+                      src={item.images[0]}
+                      alt={item.title ?? 'Afbeelding'}
+                      className="w-full h-48 object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-48 bg-gray-100 flex items-center justify-center text-gray-400">
+                      Geen afbeelding
+                    </div>
+                  )}
 
-                <div className="p-4">
-                  <h2 className="text-lg font-semibold mb-2 text-gray-800">
-                    {item.title ?? 'Geen titel'}
-                  </h2>
-                  <ul className="text-sm text-gray-600 space-y-1">
-                    <li>
-                      <strong>Afdichtingen:</strong> {item.afdichten || '–'}
-                    </li>
-                    <li>
-                      <strong>Kamer:</strong> {item.kamer || '–'}
-                    </li>
-                    <li>
-                      <strong>uG:</strong> {item.uG ?? '–'}
-                    </li>
-                  </ul>
-                </div>
-              </Link>
-            ))}
-          </div>
-        ) : (
-          <p className="text-gray-500 text-center">Geen items gevonden.</p>
-        )}
+                  <div className="p-4">
+                    <h2 className="text-lg font-semibold mb-2 text-gray-800">
+                      {item.title ?? 'Geen titel'}
+                    </h2>
+                    <ul className="text-sm text-gray-600 space-y-1">
+                      <li>
+                        <strong>Afdichtingen:</strong> {item.afdichten || '–'}
+                      </li>
+                      <li>
+                        <strong>Kamer:</strong> {item.kamer || '–'}
+                      </li>
+                      <li>
+                        <strong>uG:</strong> {item.uG ?? '–'}
+                      </li>
+                    </ul>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500 text-center">Geen items gevonden.</p>
+          )}
+        </div>
       </div>
     </div>
   );

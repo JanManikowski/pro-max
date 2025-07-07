@@ -1,5 +1,6 @@
 import "./globals.css";
 import { Roboto } from "next/font/google";
+import GlobalDataProvider from './components/GlobalDataContext';
 
 const roboto = Roboto({
   weight: ["400", "700"],
@@ -14,7 +15,11 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="nl" className={roboto.variable}>
-      <body className="font-roboto">{children}</body>
+      <body className="font-roboto">
+        <GlobalDataProvider>
+          {children}
+        </GlobalDataProvider>
+      </body>
     </html>
   );
 }
