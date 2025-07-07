@@ -46,10 +46,11 @@ export default function GlobalDataProvider({ children }: { children: ReactNode }
             const subsubName = subsub.data().name;
 
             const itemSnap = await getDocs(collection(db, `categories/${catId}/subcategories/${subId}/subsubcategories/${subsubId}/items`));
-            const items: Item[] = itemSnap.docs.map((doc) => ({
-              id: doc.id,
-              ...doc.data(),
-            }));
+const items: Item[] = itemSnap.docs.map((doc) => {
+  const { id, ...data } = doc.data() as Item;
+  return { id: doc.id, ...data };
+});
+
 
             subsubcategories.push({ id: subsubId, name: subsubName, items });
           }
