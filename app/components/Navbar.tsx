@@ -106,10 +106,13 @@ export default function Navbar() {
 
           {/* Sub-subcategory Row */}
           {activeCategory && activeSubcategory &&
-            categories
-              .find((c) => c.id === activeCategory)
-              ?.subcategories?.find((s) => s.id === activeSubcategory)
-              ?.subsubcategories?.length > 0 && (
+            (() => {
+              const subsubcategories = categories
+                .find((c) => c.id === activeCategory)
+                ?.subcategories?.find((s) => s.id === activeSubcategory)
+                ?.subsubcategories;
+              return Array.isArray(subsubcategories) && subsubcategories.length > 0;
+            })() && (
               <div className="flex flex-wrap justify-center gap-6 py-4 bg-gray-100">
                 {categories
                   .find((c) => c.id === activeCategory)
