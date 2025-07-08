@@ -1,15 +1,33 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import SearchBar from './SearchBar';
 import { useGlobalData } from './GlobalDataContext';
+import { auth } from '../lib/firebase';
+import { onAuthStateChanged, signOut, User } from 'firebase/auth';
 
 export default function Navbar() {
   const { categories, loading } = useGlobalData();
   const [showDropdown, setShowDropdown] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [activeSubcategory, setActiveSubcategory] = useState<string | null>(null);
+
+  // track Firebase user
+  const [user, setUser] = useState<User | null>(null);
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, u => setUser(u));
+    return unsub;
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      // optionally: redirect or toast here
+    } catch (err) {
+      console.error('Logout failed', err);
+    }
+  };
 
   return (
     <nav className="bg-white shadow-sm border-b border-gray-200 z-50 relative font-roboto h-24">
@@ -20,8 +38,11 @@ export default function Navbar() {
 
         <ul className="flex gap-12 items-center text-xl font-semibold tracking-wide">
           <li>
-            <Link href="#" className="hover:text-blue-600 transition hover:underline underline-offset-4">
-              Over het bedrijf
+            <Link
+              href="/our-projects"
+              className="hover:text-[#FF914B] transition hover:underline underline-offset-4"
+            >
+              Onze Projecten
             </Link>
           </li>
           <li className="relative">
@@ -34,26 +55,45 @@ export default function Navbar() {
               }}
               className="relative"
             >
-              <Link href="/products" className="hover:text-blue-600 transition hover:underline underline-offset-4">
+              <Link
+                href="/products"
+                className="hover:text-[#FF914B] transition hover:underline underline-offset-4"
+              >
                 Producten
               </Link>
-              <div className="absolute top-full left-0 w-full h-6 pointer-events-auto"></div>
+              <div className="absolute top-full left-0 w-full h-24 pointer-events-auto" />
             </div>
           </li>
           <li>
-            <Link href="#" className="hover:text-blue-600 transition hover:underline underline-offset-4">
+            <Link
+              href="/about-us"
+              className="hover:text-[#FF914B] transition hover:underline underline-offset-4"
+            >
               Over Ons
             </Link>
           </li>
           <li>
-            <Link href="#" className="hover:text-blue-600 transition hover:underline underline-offset-4">
+            <Link
+              href="#"
+              className="hover:text-[#FF914B] transition hover:underline underline-offset-4"
+            >
               Contact
             </Link>
           </li>
         </ul>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           <SearchBar />
+
+          {/* ← new logout button */}
+          {user && (
+            <button
+              onClick={handleLogout}
+              className="text-gray-600 hover:text-[#FF914B] transition text-sm font-medium"
+            >
+              Logout
+            </button>
+          )}
         </div>
       </div>
 
@@ -74,13 +114,13 @@ export default function Navbar() {
               <>
                 {/* Category Row */}
                 <div className="flex flex-wrap justify-center gap-6 py-4 border-b text-lg">
-                  {categories.map((cat) => (
+                  {categories.map(cat => (
                     <Link
                       key={cat.id}
                       href={`/products/${cat.id}`}
-                      className={`px-4 py-2 transition transform duration-200 ease-in-out hover:scale-110 hover:text-blue-600 ${
+                      className={`px-4 py-2 transition transform duration-200 ease-in-out hover:scale-110 hover:text-[#FF914B] ${
                         activeCategory === cat.id
-                          ? 'text-blue-600 font-semibold underline underline-offset-4'
+                          ? 'hover:text-[#FF914B] font-semibold underline underline-offset-4'
                           : ''
                       }`}
                       onMouseEnter={() => {
@@ -97,8 +137,8 @@ export default function Navbar() {
                 {activeCategory && (
                   <div className="flex flex-wrap justify-center gap-6 py-4 border-b bg-gray-50 text-base">
                     {categories
-                      .find((c) => c.id === activeCategory)
-                      ?.subcategories?.map((sub) => (
+                      .find(c => c.id === activeCategory)
+                      ?.subcategories?.map(sub => (
                         <Link
                           key={sub.id}
                           href={
@@ -106,9 +146,9 @@ export default function Navbar() {
                               ? `/products/${activeCategory}/${sub.id}`
                               : `/products/${activeCategory}/${sub.id}/items`
                           }
-                          className={`px-4 py-2 transition transform duration-200 ease-in-out hover:scale-110 hover:text-blue-600 ${
+                          className={`px-4 py-2 transition transform duration-200 ease-in-out hover:scale-110 hover:text-[#FF914B] ${
                             activeSubcategory === sub.id
-                              ? 'text-blue-600 font-semibold underline underline-offset-4'
+                              ? 'hover:text-[#FF914B] font-semibold underline underline-offset-4'
                               : ''
                           }`}
                           onMouseEnter={() => setActiveSubcategory(sub.id)}
@@ -123,23 +163,24 @@ export default function Navbar() {
                 {activeCategory &&
                   activeSubcategory &&
                   (() => {
-                    const subsubcategories = categories
-                      .find((c) => c.id === activeCategory)
-                      ?.subcategories?.find((s) => s.id === activeSubcategory)
+                    const subsubs = categories
+                      .find(c => c.id === activeCategory)
+                      ?.subcategories?.find(s => s.id === activeSubcategory)
                       ?.subsubcategories;
-                    return Array.isArray(subsubcategories) && subsubcategories.length > 0;
+                    return Array.isArray(subsubs) && subsubs.length > 0;
                   })() && (
                     <div className="flex flex-wrap justify-center gap-6 py-4 bg-gray-100 text-sm">
                       {categories
-                        .find((c) => c.id === activeCategory)
-                        ?.subcategories?.find((s) => s.id === activeSubcategory)
-                        ?.subsubcategories?.map((subsub) => (
+                        .find(c => c.id === activeCategory)
+                        ?.subcategories
+                        ?.find(s => s.id === activeSubcategory)
+                        ?.subsubcategories?.map(s2 => (
                           <Link
-                            key={subsub.id}
-                            href={`/products/${activeCategory}/${activeSubcategory}/${subsub.id}`}
-                            className="px-4 py-2 transition transform duration-200 ease-in-out hover:scale-110 hover:text-blue-600"
+                            key={s2.id}
+                            href={`/products/${activeCategory}/${activeSubcategory}/${s2.id}`}
+                            className="px-4 py-2 transition transform duration-200 ease-in-out hover:scale-110 hover:text-[#FF914B]"
                           >
-                            {subsub.name}
+                            {s2.name}
                           </Link>
                         ))}
                     </div>
