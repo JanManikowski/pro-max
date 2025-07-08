@@ -21,25 +21,29 @@ export default function CategoryPage() {
   const [categoryInfo, setCategoryInfo] = useState<{ smallText?: string } | null>(null);
   const [dataLoaded, setDataLoaded] = useState(false);
 
-  // Load basic category and subcategory info
+  // 1) Load category description + subcategory list
   useEffect(() => {
     if (typeof category !== 'string') return;
 
     const loadInitial = async () => {
       try {
         const catSnap = await getDoc(doc(db, 'categories', category));
-        if (catSnap.exists()) setCategoryInfo(catSnap.data());
+        if (catSnap.exists()) {
+          setCategoryInfo(catSnap.data());
+        }
 
-        const subSnap = await getDocs(collection(db, `categories/${category}/subcategories`));
-        const subData: Subcategory[] = subSnap.docs.map((doc) => ({
-          id: doc.id,
-          name: doc.data().name,
-          smallText: doc.data().smallText || '',
+        const subSnap = await getDocs(
+          collection(db, `categories/${category}/subcategories`)
+        );
+        const subs: Subcategory[] = subSnap.docs.map((d) => ({
+          id: d.id,
+          name: d.data().name,
+          smallText: d.data().smallText || '',
           image: null,
           hasSubSubcategories: false,
         }));
 
-        setSubcategories(subData);
+        setSubcategories(subs);
       } catch (err) {
         console.error('Failed to load category:', err);
       }
@@ -48,40 +52,53 @@ export default function CategoryPage() {
     loadInitial();
   }, [category]);
 
-  // Load images and sub-subcategory info
+  // 2) For each subcategory, detect if there are sub-subcategories,
+  //    then pick a preview image from the correct items collection.
   useEffect(() => {
     if (typeof category !== 'string' || subcategories.length === 0) return;
 
     const loadDetails = async () => {
-      const updatedSubcategories = await Promise.all(
+      const updated = await Promise.all(
         subcategories.map(async (sub) => {
-          let hasSubSubcategories = false;
+          // first check for sub-subcategories
+          const subsubSnap = await getDocs(
+            collection(
+              db,
+              `categories/${category}/subcategories/${sub.id}/subsubcategories`
+            )
+          );
+          const hasSubSub = !subsubSnap.empty;
+
           let previewImage: string | null = null;
 
-          try {
-            const subsubSnap = await getDocs(
-              collection(db, `categories/${category}/subcategories/${sub.id}/subsubcategories`)
+          if (hasSubSub) {
+            // take the first sub-subcategory’s first item image
+            const firstSubSubId = subsubSnap.docs[0].id;
+            const ssItems = await getDocs(
+              collection(
+                db,
+                `categories/${category}/subcategories/${sub.id}/subsubcategories/${firstSubSubId}/items`
+              )
             );
-            hasSubSubcategories = !subsubSnap.empty;
-
-            const itemSnap = await getDocs(
+            previewImage = ssItems.docs[0]?.data()?.images?.[0] || null;
+          } else {
+            // fallback: items directly under this subcategory
+            const itemsSnap = await getDocs(
               collection(db, `categories/${category}/subcategories/${sub.id}/items`)
             );
-            previewImage = itemSnap.docs[0]?.data()?.images?.[0] || null;
-          } catch (err) {
-            console.warn(`Error loading details for subcategory ${sub.id}`, err);
+            previewImage = itemsSnap.docs[0]?.data()?.images?.[0] || null;
           }
 
           return {
             ...sub,
-            hasSubSubcategories,
+            hasSubSubcategories: hasSubSub,
             image: previewImage,
           };
         })
       );
 
-      setSubcategories(updatedSubcategories);
-      setDataLoaded(true); // Trigger fade-in
+      setSubcategories(updated);
+      setDataLoaded(true);
     };
 
     loadDetails();
@@ -94,16 +111,17 @@ export default function CategoryPage() {
       <h1 className="text-center text-5xl font-bold mt-12 mb-4 capitalize text-gray-900">
         {category}
       </h1>
+
       <div
-  className={`transition-opacity duration-500 ease-out ${
-    dataLoaded ? 'opacity-100' : 'opacity-0'
-  }`}
->
-  <p className="text-center text-gray-600 max-w-2xl mx-auto mb-10">
-    {categoryInfo?.smallText ||
-      'Hieronder vindt u een overzicht van de subcategorieën binnen deze categorie.'}
-  </p>
-</div>
+        className={`transition-opacity duration-500 ease-out ${
+          dataLoaded ? 'opacity-100' : 'opacity-0'
+        }`}
+      >
+        <p className="text-center text-gray-600 max-w-2xl mx-auto mb-10">
+          {categoryInfo?.smallText ||
+            'Hieronder vindt u een overzicht van de subcategorieën binnen deze categorie.'}
+        </p>
+      </div>
 
       <div
         className={`transition-opacity duration-500 ease-out ${
@@ -113,21 +131,23 @@ export default function CategoryPage() {
         {subcategories.map((sub) => (
           <div
             key={sub.id}
-            className="w-full h-fit flex flex-col md:flex-row items-center border-b bg-white py-12"
+            className="w-full flex flex-col md:flex-row items-center border-b bg-white py-12"
           >
-            <div className="md:w-1/2 h-full flex items-center justify-center p-8">
-              {sub.image ? (
+            <div className="md:w-1/2 flex items-center justify-center p-8">
+              {sub.image && (
                 <img
                   src={sub.image}
                   alt={sub.name}
                   className="object-contain max-h-[300px] max-w-full"
                 />
-              ) : null}
+              )}
             </div>
 
-            <div className="md:w-1/2 p-8 flex flex-col justify-center h-full">
+            <div className="md:w-1/2 p-8 flex flex-col justify-center">
               <h2 className="text-4xl font-bold mb-4 text-gray-900">{sub.name}</h2>
-              <p className="text-gray-600 mb-6 text-lg leading-relaxed">{sub.smallText}</p>
+              <p className="text-gray-600 mb-6 text-lg leading-relaxed">
+                {sub.smallText}
+              </p>
               <Link
                 href={
                   sub.hasSubSubcategories

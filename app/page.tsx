@@ -50,15 +50,13 @@ export default function Home() {
           alt="Hero Image"
           layout="fill"
           objectFit="cover"
-          quality={90}
           priority
           className="z-0"
         />
-        <div className="absolute inset-0 bg-black bg-opacity-30 z-10" />
         <div className="z-20 text-center px-4">
-          <h1 className="text-5xl md:text-6xl font-extrabold leading-tight drop-shadow-xl">
-            Synego – PVC-producten met een <br />
-            <span className="text-blue-300">uitzonderlijke afwerkingskwaliteit</span>
+          <h1 className="text-5xl md:text-6xl font-extrabold leading-tight drop-shadow-xl text-red-500">
+            Pro-Max <br />
+            <span className="text-[#FF914B]">Kunststof en aluminium kozijnen</span>
           </h1>
         </div>
       </section>
@@ -67,7 +65,7 @@ export default function Home() {
       <section className="py-20 px-6 bg-gray-50 text-center">
         <h2 className="text-4xl font-bold mb-6">Over Ons</h2>
         <p className="max-w-3xl mx-auto text-lg text-gray-600 leading-relaxed">
-          MJM Kozijnen levert maatwerkoplossingen voor moderne en duurzame woonprojecten. Met
+          Pro-Max levert maatwerkoplossingen voor moderne en duurzame woonprojecten. Met
           jarenlange ervaring in aluminium en kunststof systemen staan wij garant voor kwaliteit,
           service en design.
         </p>
@@ -75,7 +73,7 @@ export default function Home() {
 
       {/* Features */}
       <section className="py-20 px-6 text-center">
-        <h2 className="text-4xl font-bold mb-10">Waarom kiezen voor MJM?</h2>
+        <h2 className="text-4xl font-bold mb-10">Waarom kiezen voor Pro-Max?</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10 max-w-6xl mx-auto">
           <div className="p-6 bg-white shadow rounded-lg">
             <h3 className="text-xl font-semibold mb-3">Energie-efficiënt</h3>
