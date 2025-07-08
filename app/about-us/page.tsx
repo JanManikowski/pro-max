@@ -5,7 +5,8 @@ import Footer from '../components/Footer';
 import Image from 'next/image';
 import img4 from '../../public/about-us-4.jpg';
 import img2 from '../../public/about-us-2.jpg';
-import img3 from '../../public/about-us-3.jpg';
+import img3 from '../../public/about-us-3.jpg';;
+import img5 from '../../public/about-us-5.jpg';
 
 export default function AboutUsPage() {
   return (
@@ -90,7 +91,7 @@ export default function AboutUsPage() {
           {/* Timeline or history image – replace with company-founder photo, timeline graphic, etc. */}
           <div className="relative h-80 rounded-lg overflow-hidden shadow-lg">
             <Image
-              src={img4}
+              src={img5}
               alt="Historische foto van Pro Max"
               fill
               className="object-cover"

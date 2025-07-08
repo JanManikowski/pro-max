@@ -204,7 +204,7 @@ export default function AlbumPage() {
                 >
                   <img
                     src={url}
-                    alt={albumId}
+                    alt={Array.isArray(albumId) ? albumId.join(', ') : albumId}
                     className="w-full h-full object-cover hover:scale-105 transition-transform duration-200"
                   />
                   {editMode && user && (
