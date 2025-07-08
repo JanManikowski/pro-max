@@ -4,12 +4,12 @@ export default function Footer() {
       <h2 className="text-2xl font-bold mb-4">Neem contact met ons op</h2>
       <p className="mb-6">Voor vragen, offertes of samenwerking – wij staan voor u klaar.</p>
       <a
-        href="mailto:info@mjmklussenbedrijf.nl"
+        href="mailto:info@pro-maxkozijnen@gmail.nl"
         className="bg-white text-blue-600 px-6 py-3 rounded font-semibold hover:bg-gray-100 transition"
       >
-        info@mjmklussenbedrijf.nl
+        info@promaxkozijnen.nl
       </a>
-      <p className="mt-10 text-sm opacity-70">© {new Date().getFullYear()} MJM Kozijnen</p>
+      <p className="mt-10 text-sm opacity-70">© {new Date().getFullYear()} Pro-Max Kozijnen</p>
     </footer>
   );
 }

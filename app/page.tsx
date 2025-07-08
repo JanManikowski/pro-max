@@ -1,39 +1,82 @@
-// app/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
 import { db } from './lib/firebase';
-import { collection, getDocs, DocumentData } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Link from 'next/link';
 import Image from 'next/image';
 
 export default function Home() {
-  const [previews, setPreviews] = useState<{ title: string; href: string; img: string }[]>([]);
+  const [previews, setPreviews] = useState<
+    { title: string; href: string; img: string }[]
+  >([]);
 
   useEffect(() => {
     const fetchPreviewImages = async () => {
       const categories = ['ramen', 'deuren', 'schuifsystemen'];
-      const promises = categories.map(async (cat) => {
-        try {
-          const snap = await getDocs(collection(db, `categories/${cat}/subcategories`));
-          for (const docSnap of snap.docs) {
-            const subId = docSnap.id;
-            const itemSnap = await getDocs(
-              collection(db, `categories/${cat}/subcategories/${subId}/items`)
-            );
-            const item = itemSnap.docs[0]?.data();
-            const img = item?.images?.[0] || '/placeholder.jpg';
-            return { title: cat.charAt(0).toUpperCase() + cat.slice(1), href: `/products/${cat}`, img };
-          }
-        } catch (err) {
-          console.error(`Error fetching preview for ${cat}:`, err);
-        }
-      });
 
-      const results = await Promise.all(promises);
-      setPreviews(results.filter(Boolean) as any);
+      const results = await Promise.all(
+        categories.map(async (cat) => {
+          let foundImg: string | null = null;
+
+          // fetch all subcategories
+          const subSnap = await getDocs(
+            collection(db, `categories/${cat}/subcategories`)
+          );
+
+          // scan each subcategory until we find an image
+          for (const subDoc of subSnap.docs) {
+            const subId = subDoc.id;
+
+            // 1) check for sub-subcategories
+            const subsubSnap = await getDocs(
+              collection(
+                db,
+                `categories/${cat}/subcategories/${subId}/subsubcategories`
+              )
+            );
+
+            if (!subsubSnap.empty) {
+              // grab first sub-subcategory
+              const firstSubSubId = subsubSnap.docs[0].id;
+              const itemsSnap = await getDocs(
+                collection(
+                  db,
+                  `categories/${cat}/subcategories/${subId}/subsubcategories/${firstSubSubId}/items`
+                )
+              );
+              const imgUrl = itemsSnap.docs[0]?.data()?.images?.[0];
+              if (imgUrl) {
+                foundImg = imgUrl;
+                break;
+              }
+            } else {
+              // fallback to items under this subcategory
+              const itemsSnap = await getDocs(
+                collection(
+                  db,
+                  `categories/${cat}/subcategories/${subId}/items`
+                )
+              );
+              const imgUrl = itemsSnap.docs[0]?.data()?.images?.[0];
+              if (imgUrl) {
+                foundImg = imgUrl;
+                break;
+              }
+            }
+          }
+
+          return {
+            title: cat.charAt(0).toUpperCase() + cat.slice(1),
+            href: `/products/${cat}`,
+            img: foundImg || '/placeholder.jpg',
+          };
+        })
+      );
+
+      setPreviews(results);
     };
 
     fetchPreviewImages();
@@ -100,7 +143,11 @@ export default function Home() {
               href={p.href}
               className="block bg-white rounded-lg shadow hover:shadow-xl transition overflow-hidden"
             >
-              <img src={p.img} alt={p.title} className="w-full h-48 object-cover" />
+              <img
+                src={p.img}
+                alt={p.title}
+                className="w-full h-48 object-cover"
+              />
               <div className="p-4">
                 <h3 className="text-xl font-semibold">{p.title}</h3>
               </div>
