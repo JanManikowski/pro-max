@@ -2,66 +2,53 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { collection, getDocs } from 'firebase/firestore';
 import Fuse from 'fuse.js';
-import { db } from '../lib/firebase';
+import { useGlobalData } from './GlobalDataContext';
 
 export default function SearchBar() {
+  const { categories } = useGlobalData();
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [fuse, setFuse] = useState<Fuse<any> | null>(null);
   const router = useRouter();
 
   useEffect(() => {
-    const fetchData = async () => {
-      const items: any[] = [];
+    const items: any[] = [];
 
-      const catSnap = await getDocs(collection(db, 'categories'));
-      for (const cat of catSnap.docs) {
-        const catId = cat.id;
-        const catName = cat.data().name;
+    categories.forEach(cat => {
+      const catId = cat.id;
+      const catName = cat.name;
 
-        const subSnap = await getDocs(collection(db, `categories/${catId}/subcategories`));
-        for (const sub of subSnap.docs) {
-          const subId = sub.id;
-          const subName = sub.data().name;
+      cat.subcategories?.forEach(sub => {
+        const subId = sub.id;
+        const subName = sub.name;
 
-          const subsubSnap = await getDocs(collection(db, `categories/${catId}/subcategories/${subId}/subsubcategories`));
-          for (const subsub of subsubSnap.docs) {
-            items.push({
-              name: subsub.data().name,
-              path: `/products/${catId}/${subId}/${subsub.id}`,
-            });
-          }
-
+        sub.subsubcategories?.forEach(subsub => {
           items.push({
-            name: subName,
-            path: `/products/${catId}/${subId}`,
+            name: subsub.name,
+            path: `/products/${catId}/${subId}/${subsub.id}`,
           });
-        }
-
-        items.push({
-          name: catName,
-          path: `/products/${catId}`,
         });
-      }
 
-      const fuseInstance = new Fuse(items, {
-        keys: ['name'],
-        threshold: 0.4,
+        items.push({ name: subName, path: `/products/${catId}/${subId}` });
       });
 
-      setFuse(fuseInstance);
-    };
+      items.push({ name: catName, path: `/products/${catId}` });
+    });
 
-    fetchData();
-  }, []);
+    const fuseInstance = new Fuse(items, {
+      keys: ['name'],
+      threshold: 0.4,
+    });
+
+    setFuse(fuseInstance);
+  }, [categories]);
 
   const handleSearch = (value: string) => {
     setQuery(value);
     if (fuse && value.length > 1) {
       const results = fuse.search(value).slice(0, 5);
-      setSuggestions(results.map((r) => r.item));
+      setSuggestions(results.map(r => r.item));
     } else {
       setSuggestions([]);
     }
@@ -79,7 +66,7 @@ export default function SearchBar() {
         type="text"
         placeholder="🔍 Zoek producten..."
         value={query}
-        onChange={(e) => handleSearch(e.target.value)}
+        onChange={e => handleSearch(e.target.value)}
         className="w-full border border-gray-300 px-4 py-2 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
       />
       {suggestions.length > 0 && (
