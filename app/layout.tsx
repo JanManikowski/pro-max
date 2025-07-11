@@ -1,6 +1,6 @@
 import "./globals.css";
 import { Roboto } from "next/font/google";
-import GlobalDataProvider from './components/GlobalDataContext';
+import GlobalDataProvider from './components/GlobalDataProvider';
 
 const roboto = Roboto({
   weight: ["400", "700"],
