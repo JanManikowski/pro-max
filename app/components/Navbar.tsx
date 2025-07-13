@@ -9,21 +9,26 @@ import { onAuthStateChanged, signOut, User } from 'firebase/auth';
 
 export default function Navbar() {
   const { categories, loading } = useGlobalData();
+
+  // Desktop dropdown
   const [showDropdown, setShowDropdown] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [activeSubcategory, setActiveSubcategory] = useState<string | null>(null);
 
-  // track Firebase user
+  // Mobile menu
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileProductsOpen, setMobileProductsOpen] = useState(false);
+  const [mobileCatOpen, setMobileCatOpen] = useState<string | null>(null);
+
+  // Auth state
   const [user, setUser] = useState<User | null>(null);
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, u => setUser(u));
-    return unsub;
+    return onAuthStateChanged(auth, setUser);
   }, []);
 
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      // optionally: redirect or toast here
     } catch (err) {
       console.error('Logout failed', err);
     }
@@ -31,12 +36,14 @@ export default function Navbar() {
 
   return (
     <nav className="bg-white shadow-sm border-b border-gray-200 z-50 relative font-roboto h-24">
-      <div className="w-full h-full flex items-center justify-between px-12 pl-32">
+      <div className="w-full h-full flex items-center justify-between px-6 md:px-12">
+        {/* Logo */}
         <Link href="/" className="flex items-center">
           <img src="/logo.png" alt="Logo" className="h-14" />
         </Link>
 
-        <ul className="flex gap-12 items-center text-xl font-semibold tracking-wide">
+        {/* Desktop links */}
+        <ul className="hidden md:flex gap-12 items-center text-xl font-semibold tracking-wide">
           <li>
             <Link
               href="/our-projects"
@@ -82,10 +89,9 @@ export default function Navbar() {
           </li>
         </ul>
 
-        <div className="flex items-center gap-4">
+        {/* Desktop search + logout */}
+        <div className="hidden md:flex items-center gap-4">
           <SearchBar />
-
-          {/* ← new logout button */}
           {user && (
             <button
               onClick={handleLogout}
@@ -95,8 +101,18 @@ export default function Navbar() {
             </button>
           )}
         </div>
+
+        {/* Mobile hamburger */}
+        <button
+          className="md:hidden text-2xl px-2"
+          onClick={() => setMobileOpen(!mobileOpen)}
+          aria-label="Toggle menu"
+        >
+          {mobileOpen ? '✕' : '☰'}
+        </button>
       </div>
 
+      {/* Desktop dropdown menu */}
       {showDropdown && (
         <div
           onMouseEnter={() => setShowDropdown(true)}
@@ -105,9 +121,9 @@ export default function Navbar() {
             setActiveCategory(null);
             setActiveSubcategory(null);
           }}
-          className="fixed top-24 left-1/2 -translate-x-1/2 w-screen bg-white shadow-2xl border-t z-40 text-center animate-fade-in"
+          className="hidden md:block fixed top-24 left-1/2 -translate-x-1/2 w-screen bg-white shadow-2xl border-t z-40 text-center animate-fade-in"
         >
-          <div className="w-full max-w-[1400px] mx-auto">
+          <div className="w-full mx-auto">
             {loading ? (
               <div className="py-6 text-gray-400">Laden...</div>
             ) : (
@@ -120,7 +136,7 @@ export default function Navbar() {
                       href={`/products/${cat.id}`}
                       className={`px-4 py-2 transition transform duration-200 ease-in-out hover:scale-110 hover:text-[#FF914B] ${
                         activeCategory === cat.id
-                          ? 'hover:text-[#FF914B] font-semibold underline underline-offset-4'
+                          ? 'font-semibold underline underline-offset-4'
                           : ''
                       }`}
                       onMouseEnter={() => {
@@ -141,14 +157,10 @@ export default function Navbar() {
                       ?.subcategories?.map(sub => (
                         <Link
                           key={sub.id}
-                          href={
-                            sub.subsubcategories && sub.subsubcategories.length > 0
-                              ? `/products/${activeCategory}/${sub.id}`
-                              : `/products/${activeCategory}/${sub.id}/items`
-                          }
+                          href={`/products/${activeCategory}/${sub.id}`}
                           className={`px-4 py-2 transition transform duration-200 ease-in-out hover:scale-110 hover:text-[#FF914B] ${
                             activeSubcategory === sub.id
-                              ? 'hover:text-[#FF914B] font-semibold underline underline-offset-4'
+                              ? 'font-semibold underline underline-offset-4'
                               : ''
                           }`}
                           onMouseEnter={() => setActiveSubcategory(sub.id)}
@@ -190,6 +202,99 @@ export default function Navbar() {
           </div>
         </div>
       )}
+
+      {/* MOBILE MENU */}
+      {mobileOpen && (
+        <div className="md:hidden bg-white border-t border-gray-200">
+          <ul className="flex flex-col px-6 py-4 space-y-4 text-lg font-semibold">
+            <li>
+              <Link href="/our-projects" onClick={() => setMobileOpen(false)}>
+                Onze Projecten
+              </Link>
+            </li>
+
+            {/* Mobile “Producten” with nested */}
+            <li>
+              <button
+                onClick={() => {
+                  setMobileProductsOpen(!mobileProductsOpen);
+                  setMobileCatOpen(null);
+                }}
+                className="w-full text-left flex items-center justify-between"
+              >
+                <span>Producten</span>
+                <span>{mobileProductsOpen ? '−' : '+'}</span>
+              </button>
+
+              {mobileProductsOpen && (
+                <ul className="pl-4 border-l border-gray-200 mt-2 space-y-2">
+                  {loading ? (
+                    <li className="text-gray-400">Laden...</li>
+                  ) : (
+                    categories.map(cat => (
+                      <li key={cat.id}>
+                        <button
+                          onClick={() =>
+                            setMobileCatOpen(mobileCatOpen === cat.id ? null : cat.id)
+                          }
+                          className="w-full text-left flex items-center justify-between"
+                        >
+                          <span>{cat.name}</span>
+                          {cat.subcategories?.length ? (
+                            <span>{mobileCatOpen === cat.id ? '−' : '+'}</span>
+                          ) : null}
+                        </button>
+
+                        {mobileCatOpen === cat.id && cat.subcategories && (
+                          <ul className="pl-4 border-l border-gray-200 mt-2 space-y-2 text-base">
+                            {cat.subcategories.map(sub => (
+                              <li key={sub.id}>
+                                <Link
+                                  href={`/products/${cat.id}/${sub.id}`}
+                                  onClick={() => setMobileOpen(false)}
+                                >
+                                  {sub.name}
+                                </Link>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </li>
+                    ))
+                  )}
+                </ul>
+              )}
+            </li>
+
+            <li>
+              <Link href="/about-us" onClick={() => setMobileOpen(false)}>
+                Over Ons
+              </Link>
+            </li>
+            <li>
+              <Link href="#" onClick={() => setMobileOpen(false)}>
+                Contact
+              </Link>
+            </li>
+            <li>
+              <SearchBar />
+            </li>
+            {user && (
+              <li>
+                <button
+                  onClick={() => {
+                    handleLogout();
+                    setMobileOpen(false);
+                  }}
+                  className="text-gray-600 hover:text-[#FF914B] transition text-sm font-medium"
+                >
+                  Logout
+                </button>
+              </li>
+            )}
+          </ul>
+        </div>
+      )}
     </nav>
-  );
+);
 }
