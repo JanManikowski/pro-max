@@ -74,7 +74,7 @@ export default function SearchBar() {
   };
 
   return (
-    <div className="relative w-64">
+    <div className="relative w-full sm:w-48 md:w-64">
       <input
         type="text"
         placeholder="🔍 Zoek producten..."

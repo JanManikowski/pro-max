@@ -30,13 +30,13 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-white shadow-sm border-b border-gray-200 z-50 relative font-roboto h-24">
-      <div className="w-full h-full flex items-center justify-between px-12 pl-32">
+    <nav className="bg-white shadow-sm border-b border-gray-200 z-50 relative font-roboto h-16 md:h-24">
+      <div className="max-w-screen-xl mx-auto w-full h-full flex flex-wrap md:flex-nowrap items-center justify-between px-4 md:px-12 lg:pl-32">
         <Link href="/" className="flex items-center">
           <img src="/logo.png" alt="Logo" className="h-14" />
         </Link>
 
-        <ul className="flex gap-12 items-center text-xl font-semibold tracking-wide">
+        <ul className="flex flex-wrap justify-center gap-4 sm:gap-8 md:gap-12 items-center text-sm sm:text-base md:text-xl font-semibold tracking-wide w-full md:w-auto md:justify-start">
           <li>
             <Link
               href="/our-projects"
@@ -82,7 +82,7 @@ export default function Navbar() {
           </li>
         </ul>
 
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-4 justify-center md:justify-end w-full md:w-auto mt-4 md:mt-0">
           <SearchBar />
 
           {/* ← new logout button */}
@@ -105,7 +105,7 @@ export default function Navbar() {
             setActiveCategory(null);
             setActiveSubcategory(null);
           }}
-          className="fixed top-24 left-1/2 -translate-x-1/2 w-screen bg-white shadow-2xl border-t z-40 text-center animate-fade-in"
+          className="fixed left-1/2 -translate-x-1/2 w-screen bg-white shadow-2xl border-t z-40 text-center animate-fade-in top-16 md:top-24"
         >
           <div className="w-full max-w-[1400px] mx-auto">
             {loading ? (
